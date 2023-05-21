@@ -11,6 +11,28 @@ protocol LoginViewControllerDelegate: AnyObject {
   func didLogin();
 };
 
+extension LoginViewController {
+  @objc func keyboardWillShow(sender: NSNotification) {
+    guard let userInfo = sender.userInfo,
+          let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue,
+          let currentTextField = UIResponder.currentFirst() as? UITextField else { return };
+    
+    let keyboardTopY = keyboardFrame.cgRectValue.origin.y;
+    let convertedTextFieldFrame = view.convert(currentTextField.frame, from: currentTextField.superview);
+    let textFieldBottomY = convertedTextFieldFrame.origin.y + convertedTextFieldFrame.size.height;
+    
+    if (textFieldBottomY > keyboardTopY) {
+      let textBoxY = convertedTextFieldFrame.origin.y;
+      let newFrameY = (textBoxY - keyboardTopY / 1.3) * -1;
+      view.frame.origin.y = newFrameY;
+    };
+  };
+  
+  @objc func keyboardWillHide(sender: NSNotification) {
+      view.frame.origin.y = 0
+  };
+};
+
 class LoginViewController: UIViewController {
   let imageLogin = UIImageView();
   let loginView = LoginView();
@@ -43,6 +65,12 @@ extension LoginViewController {
   private func configureLayout() {
     configureImageLogin();
     configureLoginView();
+    setupKeyboarding();
+  };
+  
+  func setupKeyboarding() {
+    NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil);
+    NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil);
   };
   
   func isValidEmail(email: String) -> Bool {
